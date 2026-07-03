@@ -4,15 +4,47 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cctype>
+
+namespace
+{
+constexpr const char *cheatCode = "thereisnospoon";
+constexpr float matrixOverlaySeconds = 3.5f;
+constexpr float widePaddleSeconds = 12.0f;
+constexpr float matrixShieldSeconds = 10.0f;
+constexpr int maxBalls = 8;
+
+const char *matrixSpoonArt[] = {
+    "        ___________________",
+    "     .-'                   '-.",
+    "   .'   NEO: there is no      '.",
+    "  /          spoon              \\",
+    " |                               |",
+    " |        O                      |",
+    " |       /|\\        ______       |",
+    " |       / \\      _/      \\__    |",
+    " |              _/   .--.    \\_  |",
+    " |            _/    /    \\     ) |",
+    " |           /_____/      \\___/  |",
+    " |                               |",
+    "  \\   010010  MIND OVER METAL   /",
+    "   '.                           .'",
+    "     '-._____________________.-'",
+};
+}
 
 Game::Game()
     : state(GameState::Start),
       paddle(static_cast<float>(screenWidth) / 2.0f - 65.0f, static_cast<float>(screenHeight) - 55.0f, 130.0f, 18.0f, 620.0f),
-      ball(static_cast<float>(screenWidth) / 2.0f, static_cast<float>(screenHeight) - 85.0f, 9.0f, 360.0f),
       score(0),
-      lives(startingLives)
+      lives(startingLives),
+      cheatsUnlocked(false),
+      matrixOverlayTimer(0.0f),
+      widePaddleTimer(0.0f),
+      matrixShieldTimer(0.0f)
 {
     createBricks();
+    resetBallAndPaddle();
 }
 
 void Game::run()
@@ -36,6 +68,11 @@ void Game::resetGame()
     score = 0;
     lives = startingLives;
     state = GameState::Start;
+    cheatsUnlocked = false;
+    cheatBuffer.clear();
+    matrixOverlayTimer = 0.0f;
+    widePaddleTimer = 0.0f;
+    matrixShieldTimer = 0.0f;
     createBricks();
     resetBallAndPaddle();
 }
@@ -43,7 +80,24 @@ void Game::resetGame()
 void Game::resetBallAndPaddle()
 {
     paddle.reset(static_cast<float>(screenWidth) / 2.0f - paddle.getSize().x / 2.0f, static_cast<float>(screenHeight) - 55.0f);
-    ball.reset(static_cast<float>(screenWidth) / 2.0f, static_cast<float>(screenHeight) - 85.0f);
+    if (widePaddleTimer > 0.0f)
+    {
+        paddle.setWidth(220.0f, screenWidth);
+    }
+    balls.clear();
+    spawnBall(static_cast<float>(screenWidth) / 2.0f, static_cast<float>(screenHeight) - 85.0f, 0.55f);
+}
+
+void Game::spawnBall(float x, float y, float directionX)
+{
+    if (static_cast<int>(balls.size()) >= maxBalls)
+    {
+        return;
+    }
+
+    balls.emplace_back(x, y, 9.0f, 360.0f);
+    balls.back().setVelocity(360.0f * directionX, -360.0f);
+    balls.back().normalizeVelocity();
 }
 
 void Game::createBricks()
@@ -70,7 +124,28 @@ void Game::createBricks()
 
 void Game::update()
 {
+    const float deltaTime = GetFrameTime();
+
     handleInput();
+
+    if (matrixOverlayTimer > 0.0f)
+    {
+        matrixOverlayTimer = std::max(0.0f, matrixOverlayTimer - deltaTime);
+    }
+
+    if (widePaddleTimer > 0.0f)
+    {
+        widePaddleTimer = std::max(0.0f, widePaddleTimer - deltaTime);
+        if (widePaddleTimer == 0.0f)
+        {
+            paddle.setWidth(130.0f, screenWidth);
+        }
+    }
+
+    if (matrixShieldTimer > 0.0f)
+    {
+        matrixShieldTimer = std::max(0.0f, matrixShieldTimer - deltaTime);
+    }
 
     if (state == GameState::Playing)
     {
@@ -83,10 +158,27 @@ void Game::updatePlaying()
     const float deltaTime = GetFrameTime();
 
     paddle.update(deltaTime, screenWidth);
-    ball.update(deltaTime);
-    handleCollisions();
+    for (Ball &activeBall : balls)
+    {
+        activeBall.update(deltaTime);
+        handleCollisions(activeBall);
+    }
 
-    if (ball.getPosition().y - ball.getRadius() > static_cast<float>(screenHeight))
+    for (Ball &activeBall : balls)
+    {
+        if (matrixShieldTimer > 0.0f && activeBall.getPosition().y + activeBall.getRadius() >= static_cast<float>(screenHeight))
+        {
+            activeBall.setPosition(activeBall.getPosition().x, static_cast<float>(screenHeight) - activeBall.getRadius() - 1.0f);
+            activeBall.reverseY();
+        }
+    }
+
+    balls.erase(std::remove_if(balls.begin(), balls.end(), [](const Ball &activeBall) {
+                    return activeBall.getPosition().y - activeBall.getRadius() > static_cast<float>(screenHeight);
+                }),
+                balls.end());
+
+    if (balls.empty())
     {
         --lives;
 
@@ -109,6 +201,9 @@ void Game::updatePlaying()
 
 void Game::handleInput()
 {
+    handleCheatCodeInput();
+    handleCheatHotkeys();
+
     if (IsKeyPressed(KEY_SPACE))
     {
         if (state == GameState::Start)
@@ -135,37 +230,107 @@ void Game::handleInput()
     }
 }
 
-void Game::handleCollisions()
+void Game::handleCheatCodeInput()
 {
-    Vector2 position = ball.getPosition();
-    Vector2 velocity = ball.getVelocity();
-    const float radius = ball.getRadius();
+    int key = GetCharPressed();
+    while (key > 0)
+    {
+        if (std::isalpha(key))
+        {
+            cheatBuffer.push_back(static_cast<char>(std::tolower(key)));
+
+            if (cheatBuffer.size() > std::char_traits<char>::length(cheatCode))
+            {
+                cheatBuffer.erase(cheatBuffer.begin());
+            }
+
+            if (cheatBuffer == cheatCode)
+            {
+                cheatsUnlocked = true;
+                matrixOverlayTimer = matrixOverlaySeconds;
+                cheatBuffer.clear();
+            }
+        }
+
+        key = GetCharPressed();
+    }
+}
+
+void Game::handleCheatHotkeys()
+{
+    if (!cheatsUnlocked)
+    {
+        return;
+    }
+
+    if (IsKeyPressed(KEY_ONE))
+    {
+        for (Ball &activeBall : balls)
+        {
+            activeBall.multiplySpeed(1.18f);
+        }
+    }
+
+    if (IsKeyPressed(KEY_TWO) && !balls.empty())
+    {
+        const Ball &sourceBall = balls.front();
+        const float directionX = balls.size() % 2 == 0 ? -0.75f : 0.75f;
+        spawnBall(sourceBall.getPosition().x, sourceBall.getPosition().y, directionX);
+    }
+
+    if (IsKeyPressed(KEY_THREE))
+    {
+        widePaddleTimer = widePaddleSeconds;
+        paddle.setWidth(220.0f, screenWidth);
+    }
+
+    if (IsKeyPressed(KEY_FOUR))
+    {
+        ++lives;
+    }
+
+    if (IsKeyPressed(KEY_FIVE))
+    {
+        matrixShieldTimer = matrixShieldSeconds;
+    }
+
+    if (IsKeyPressed(KEY_SIX))
+    {
+        applySpoonWave();
+    }
+}
+
+void Game::handleCollisions(Ball &activeBall)
+{
+    Vector2 position = activeBall.getPosition();
+    Vector2 velocity = activeBall.getVelocity();
+    const float radius = activeBall.getRadius();
 
     if (position.x - radius <= 0.0f && velocity.x < 0.0f)
     {
-        ball.reverseX();
+        activeBall.reverseX();
     }
 
     if (position.x + radius >= static_cast<float>(screenWidth) && velocity.x > 0.0f)
     {
-        ball.reverseX();
+        activeBall.reverseX();
     }
 
     if (position.y - radius <= 0.0f && velocity.y < 0.0f)
     {
-        ball.reverseY();
+        activeBall.reverseY();
     }
 
-    if (CheckCollisionCircleRec(ball.getPosition(), radius, paddle.getBounds()) && ball.getVelocity().y > 0.0f)
+    if (CheckCollisionCircleRec(activeBall.getPosition(), radius, paddle.getBounds()) && activeBall.getVelocity().y > 0.0f)
     {
         const Rectangle bounds = paddle.getBounds();
         const float paddleCenter = bounds.x + bounds.width / 2.0f;
-        const float hitRatio = (ball.getPosition().x - paddleCenter) / (bounds.width / 2.0f);
+        const float hitRatio = (activeBall.getPosition().x - paddleCenter) / (bounds.width / 2.0f);
         const float clampedRatio = std::clamp(hitRatio, -1.0f, 1.0f);
 
-        ball.setPosition(ball.getPosition().x, bounds.y - radius - 1.0f);
-        ball.setVelocity(clampedRatio * ball.getSpeed(), -std::abs(ball.getVelocity().y));
-        ball.normalizeVelocity();
+        activeBall.setPosition(activeBall.getPosition().x, bounds.y - radius - 1.0f);
+        activeBall.setVelocity(clampedRatio * activeBall.getSpeed(), -std::abs(activeBall.getVelocity().y));
+        activeBall.normalizeVelocity();
     }
 
     for (Brick &brick : bricks)
@@ -175,14 +340,14 @@ void Game::handleCollisions()
             continue;
         }
 
-        if (CheckCollisionCircleRec(ball.getPosition(), radius, brick.getBounds()))
+        if (CheckCollisionCircleRec(activeBall.getPosition(), radius, brick.getBounds()))
         {
             brick.hit();
             score += brick.getValue();
 
             const Rectangle bounds = brick.getBounds();
-            const float ballX = ball.getPosition().x;
-            const float ballY = ball.getPosition().y;
+            const float ballX = activeBall.getPosition().x;
+            const float ballY = activeBall.getPosition().y;
             const float overlapLeft = std::abs((ballX + radius) - bounds.x);
             const float overlapRight = std::abs((bounds.x + bounds.width) - (ballX - radius));
             const float overlapTop = std::abs((ballY + radius) - bounds.y);
@@ -191,13 +356,33 @@ void Game::handleCollisions()
 
             if (minOverlap == overlapLeft || minOverlap == overlapRight)
             {
-                ball.reverseX();
+                activeBall.reverseX();
             }
             else
             {
-                ball.reverseY();
+                activeBall.reverseY();
             }
 
+            break;
+        }
+    }
+}
+
+void Game::applySpoonWave()
+{
+    int destroyedCount = 0;
+
+    for (Brick &brick : bricks)
+    {
+        if (brick.isActive())
+        {
+            brick.hit();
+            score += brick.getValue();
+            ++destroyedCount;
+        }
+
+        if (destroyedCount >= 5)
+        {
             break;
         }
     }
@@ -214,8 +399,12 @@ void Game::draw() const
     }
 
     paddle.draw();
-    ball.draw();
+    for (const Ball &activeBall : balls)
+    {
+        activeBall.draw();
+    }
     drawHud();
+    drawCheatPanel();
 
     if (state == GameState::Start)
     {
@@ -238,6 +427,11 @@ void Game::draw() const
         drawCenteredText("Press SPACE to retry", 330, 24, RAYWHITE);
     }
 
+    if (matrixOverlayTimer > 0.0f)
+    {
+        drawMatrixOverlay();
+    }
+
     EndDrawing();
 }
 
@@ -245,7 +439,48 @@ void Game::drawHud() const
 {
     DrawText(TextFormat("Score: %d", score), 24, 22, 22, RAYWHITE);
     DrawText(TextFormat("Lives: %d", lives), screenWidth - 125, 22, 22, RAYWHITE);
-    DrawText("A/D or Arrows: Move   P: Pause   ESC: Quit", 245, screenHeight - 28, 18, Color{160, 170, 190, 255});
+    DrawText("A/D or Arrows: Move   P: Pause   ESC: Quit   Code: thereisnospoon", 160, screenHeight - 28, 18, Color{160, 170, 190, 255});
+}
+
+void Game::drawCheatPanel() const
+{
+    if (!cheatsUnlocked)
+    {
+        return;
+    }
+
+    DrawRectangle(18, 50, 864, 34, Color{5, 18, 12, 210});
+    DrawRectangleLines(18, 50, 864, 34, Color{95, 255, 145, 160});
+    DrawText("CHEATS: 1 Speed+  2 Spawn Ball  3 Wide Paddle  4 +Life  5 Matrix Shield  6 Spoon Wave", 30, 59, 16, Color{140, 255, 170, 255});
+
+    if (widePaddleTimer > 0.0f)
+    {
+        DrawText(TextFormat("Wide %.0fs", widePaddleTimer), 30, 90, 16, Color{180, 255, 190, 255});
+    }
+
+    if (matrixShieldTimer > 0.0f)
+    {
+        DrawText(TextFormat("Shield %.0fs", matrixShieldTimer), 125, 90, 16, Color{180, 255, 190, 255});
+    }
+}
+
+void Game::drawMatrixOverlay() const
+{
+    DrawRectangle(0, 0, screenWidth, screenHeight, Color{0, 0, 0, 230});
+
+    const int fontSize = 18;
+    const int lineHeight = 22;
+    const int lineCount = static_cast<int>(sizeof(matrixSpoonArt) / sizeof(matrixSpoonArt[0]));
+    const int startY = screenHeight / 2 - lineCount * lineHeight / 2;
+
+    for (int i = 0; i < lineCount; ++i)
+    {
+        const char *line = matrixSpoonArt[i];
+        const int x = screenWidth / 2 - MeasureText(line, fontSize) / 2;
+        DrawText(line, x, startY + i * lineHeight, fontSize, Color{95, 255, 145, 255});
+    }
+
+    drawCenteredText("CHEAT SYSTEM UNLOCKED", startY + lineCount * lineHeight + 18, 24, Color{180, 255, 190, 255});
 }
 
 void Game::drawCenteredText(const char *text, int y, int fontSize, Color color) const
@@ -260,4 +495,3 @@ bool Game::allBricksDestroyed() const
         return !brick.isActive();
     });
 }
-

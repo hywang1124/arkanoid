@@ -11,6 +11,7 @@ public:
     void update(float deltaTime, int screenWidth);
     void draw() const;
     void reset(float x, float y);
+    void setWidth(float width, int screenWidth);
 
     Rectangle getBounds() const;
     Vector2 getSize() const;
@@ -22,4 +23,3 @@ private:
 };
 
 #endif
-

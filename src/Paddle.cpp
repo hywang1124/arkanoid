@@ -36,6 +36,15 @@ void Paddle::draw() const
 void Paddle::reset(float x, float y)
 {
     position = {x, y};
+    size.x = 130.0f;
+}
+
+void Paddle::setWidth(float width, int screenWidth)
+{
+    // チート効果としてパドルの幅を変更する
+    const float centerX = position.x + size.x / 2.0f;
+    size.x = width;
+    position.x = std::clamp(centerX - size.x / 2.0f, 0.0f, static_cast<float>(screenWidth) - size.x);
 }
 
 Rectangle Paddle::getBounds() const
@@ -47,4 +56,3 @@ Vector2 Paddle::getSize() const
 {
     return size;
 }
-

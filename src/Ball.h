@@ -14,6 +14,7 @@ public:
     void reverseX();
     void reverseY();
     void normalizeVelocity();
+    void multiplySpeed(float factor);
     void setPosition(float x, float y);
     void setVelocity(float x, float y);
 
@@ -30,4 +31,3 @@ private:
 };
 
 #endif
-

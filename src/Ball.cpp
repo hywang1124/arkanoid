@@ -52,6 +52,13 @@ void Ball::normalizeVelocity()
     velocity.y = velocity.y / length * speed;
 }
 
+void Ball::multiplySpeed(float factor)
+{
+    // チート効果としてボールの速度を変更する
+    speed *= factor;
+    normalizeVelocity();
+}
+
 void Ball::setPosition(float x, float y)
 {
     position = {x, y};
@@ -81,4 +88,3 @@ float Ball::getSpeed() const
 {
     return speed;
 }
-
