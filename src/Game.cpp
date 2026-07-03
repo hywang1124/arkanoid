@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cctype>
+#include <iostream>
 
 namespace
 {
@@ -31,6 +32,129 @@ const char *matrixSpoonArt[] = {
     "   '.                           .'",
     "     '-._____________________.-'",
 };
+
+std::string getReadableKeyName(int key)
+{
+    if (key >= KEY_A && key <= KEY_Z)
+    {
+        return std::string(1, static_cast<char>('A' + key - KEY_A));
+    }
+
+    if (key >= KEY_ZERO && key <= KEY_NINE)
+    {
+        return std::string(1, static_cast<char>('0' + key - KEY_ZERO));
+    }
+
+    if (key >= KEY_F1 && key <= KEY_F12)
+    {
+        return "F" + std::to_string(key - KEY_F1 + 1);
+    }
+
+    if (key >= KEY_KP_0 && key <= KEY_KP_9)
+    {
+        return "KEYPAD_" + std::to_string(key - KEY_KP_0);
+    }
+
+    switch (key)
+    {
+    case KEY_SPACE:
+        return "SPACE";
+    case KEY_ESCAPE:
+        return "ESCAPE";
+    case KEY_ENTER:
+        return "ENTER";
+    case KEY_TAB:
+        return "TAB";
+    case KEY_BACKSPACE:
+        return "BACKSPACE";
+    case KEY_INSERT:
+        return "INSERT";
+    case KEY_DELETE:
+        return "DELETE";
+    case KEY_RIGHT:
+        return "RIGHT";
+    case KEY_LEFT:
+        return "LEFT";
+    case KEY_DOWN:
+        return "DOWN";
+    case KEY_UP:
+        return "UP";
+    case KEY_PAGE_UP:
+        return "PAGE_UP";
+    case KEY_PAGE_DOWN:
+        return "PAGE_DOWN";
+    case KEY_HOME:
+        return "HOME";
+    case KEY_END:
+        return "END";
+    case KEY_CAPS_LOCK:
+        return "CAPS_LOCK";
+    case KEY_SCROLL_LOCK:
+        return "SCROLL_LOCK";
+    case KEY_NUM_LOCK:
+        return "NUM_LOCK";
+    case KEY_PRINT_SCREEN:
+        return "PRINT_SCREEN";
+    case KEY_PAUSE:
+        return "PAUSE";
+    case KEY_LEFT_SHIFT:
+        return "LEFT_SHIFT";
+    case KEY_LEFT_CONTROL:
+        return "LEFT_CONTROL";
+    case KEY_LEFT_ALT:
+        return "LEFT_ALT";
+    case KEY_LEFT_SUPER:
+        return "LEFT_SUPER";
+    case KEY_RIGHT_SHIFT:
+        return "RIGHT_SHIFT";
+    case KEY_RIGHT_CONTROL:
+        return "RIGHT_CONTROL";
+    case KEY_RIGHT_ALT:
+        return "RIGHT_ALT";
+    case KEY_RIGHT_SUPER:
+        return "RIGHT_SUPER";
+    case KEY_MENU:
+        return "MENU";
+    case KEY_APOSTROPHE:
+        return "APOSTROPHE";
+    case KEY_COMMA:
+        return "COMMA";
+    case KEY_MINUS:
+        return "MINUS";
+    case KEY_PERIOD:
+        return "PERIOD";
+    case KEY_SLASH:
+        return "SLASH";
+    case KEY_SEMICOLON:
+        return "SEMICOLON";
+    case KEY_EQUAL:
+        return "EQUAL";
+    case KEY_LEFT_BRACKET:
+        return "LEFT_BRACKET";
+    case KEY_BACKSLASH:
+        return "BACKSLASH";
+    case KEY_RIGHT_BRACKET:
+        return "RIGHT_BRACKET";
+    case KEY_GRAVE:
+        return "GRAVE";
+    case KEY_KP_DECIMAL:
+        return "KEYPAD_DECIMAL";
+    case KEY_KP_DIVIDE:
+        return "KEYPAD_DIVIDE";
+    case KEY_KP_MULTIPLY:
+        return "KEYPAD_MULTIPLY";
+    case KEY_KP_SUBTRACT:
+        return "KEYPAD_SUBTRACT";
+    case KEY_KP_ADD:
+        return "KEYPAD_ADD";
+    case KEY_KP_ENTER:
+        return "KEYPAD_ENTER";
+    case KEY_KP_EQUAL:
+        return "KEYPAD_EQUAL";
+    default:
+        return "KEY_" + std::to_string(key);
+    }
+}
 }
 
 Game::Game()
@@ -201,6 +325,7 @@ void Game::updatePlaying()
 
 void Game::handleInput()
 {
+    logPressedKeys();
     handleCheatCodeInput();
     handleCheatHotkeys();
 
@@ -226,6 +351,17 @@ void Game::handleInput()
         else if (state == GameState::Paused)
         {
             state = GameState::Playing;
+        }
+    }
+}
+
+void Game::logPressedKeys() const
+{
+    for (int key = KEY_SPACE; key <= KEY_KB_MENU; ++key)
+    {
+        if (IsKeyPressed(key))
+        {
+            std::cout << "[Input] Key pressed: " << getReadableKeyName(key) << " (" << key << ")" << std::endl;
         }
     }
 }

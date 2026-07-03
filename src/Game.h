@@ -49,6 +49,7 @@ private:
     void update();
     void updatePlaying();
     void handleInput();
+    void logPressedKeys() const;
     void handleCheatCodeInput();
     void handleCheatHotkeys();
     void handleCollisions(Ball &activeBall);

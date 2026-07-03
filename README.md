@@ -34,6 +34,8 @@ build/arkanoid.exe
 
 ## 操作方式
 
+启动游戏的 cmd 或 PowerShell 控制台会打印每次键盘按下的操作日志。
+
 - `A` 或 `Left`：向左移动挡板
 - `D` 或 `Right`：向右移动挡板
 - `Space`：开始游戏或重新开始
