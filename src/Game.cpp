@@ -10,28 +10,10 @@
 namespace
 {
 constexpr const char *cheatCode = "thereisnospoon";
-constexpr float matrixOverlaySeconds = 3.5f;
+constexpr float cheatMessageSeconds = 2.5f;
 constexpr float widePaddleSeconds = 12.0f;
-constexpr float matrixShieldSeconds = 10.0f;
+constexpr float shieldSeconds = 10.0f;
 constexpr int maxBalls = 8;
-
-const char *matrixSpoonArt[] = {
-    "        ___________________",
-    "     .-'                   '-.",
-    "   .'   NEO: there is no      '.",
-    "  /          spoon              \\",
-    " |                               |",
-    " |        O                      |",
-    " |       /|\\        ______       |",
-    " |       / \\      _/      \\__    |",
-    " |              _/   .--.    \\_  |",
-    " |            _/    /    \\     ) |",
-    " |           /_____/      \\___/  |",
-    " |                               |",
-    "  \\   010010  MIND OVER METAL   /",
-    "   '.                           .'",
-    "     '-._____________________.-'",
-};
 
 std::string getReadableKeyName(int key)
 {
@@ -163,9 +145,9 @@ Game::Game()
       score(0),
       lives(startingLives),
       cheatsUnlocked(false),
-      matrixOverlayTimer(0.0f),
+      cheatMessageTimer(0.0f),
       widePaddleTimer(0.0f),
-      matrixShieldTimer(0.0f)
+      shieldTimer(0.0f)
 {
     createBricks();
     resetBallAndPaddle();
@@ -195,9 +177,9 @@ void Game::resetGame()
     level.reset();
     cheatsUnlocked = false;
     cheatBuffer.clear();
-    matrixOverlayTimer = 0.0f;
+    cheatMessageTimer = 0.0f;
     widePaddleTimer = 0.0f;
-    matrixShieldTimer = 0.0f;
+    shieldTimer = 0.0f;
     createBricks();
     resetBallAndPaddle();
 }
@@ -251,9 +233,9 @@ void Game::update()
 
     handleInput();
 
-    if (matrixOverlayTimer > 0.0f)
+    if (cheatMessageTimer > 0.0f)
     {
-        matrixOverlayTimer = std::max(0.0f, matrixOverlayTimer - deltaTime);
+        cheatMessageTimer = std::max(0.0f, cheatMessageTimer - deltaTime);
     }
 
     if (widePaddleTimer > 0.0f)
@@ -265,9 +247,9 @@ void Game::update()
         }
     }
 
-    if (matrixShieldTimer > 0.0f)
+    if (shieldTimer > 0.0f)
     {
-        matrixShieldTimer = std::max(0.0f, matrixShieldTimer - deltaTime);
+        shieldTimer = std::max(0.0f, shieldTimer - deltaTime);
     }
 
     if (state == GameState::Playing)
@@ -289,7 +271,7 @@ void Game::updatePlaying()
 
     for (Ball &activeBall : balls)
     {
-        if (matrixShieldTimer > 0.0f && activeBall.getPosition().y + activeBall.getRadius() >= static_cast<float>(screenHeight))
+        if (shieldTimer > 0.0f && activeBall.getPosition().y + activeBall.getRadius() >= static_cast<float>(screenHeight))
         {
             activeBall.setPosition(activeBall.getPosition().x, static_cast<float>(screenHeight) - activeBall.getRadius() - 1.0f);
             activeBall.reverseY();
@@ -382,7 +364,7 @@ void Game::handleCheatCodeInput()
             if (cheatBuffer == cheatCode)
             {
                 cheatsUnlocked = true;
-                matrixOverlayTimer = matrixOverlaySeconds;
+                cheatMessageTimer = cheatMessageSeconds;
                 cheatBuffer.clear();
             }
         }
@@ -426,7 +408,7 @@ void Game::handleCheatHotkeys()
 
     if (IsKeyPressed(KEY_FIVE))
     {
-        matrixShieldTimer = matrixShieldSeconds;
+        shieldTimer = shieldSeconds;
     }
 
     if (IsKeyPressed(KEY_SIX))
@@ -567,9 +549,9 @@ void Game::draw() const
         drawCenteredText("Press SPACE to retry", 330, 24, RAYWHITE);
     }
 
-    if (matrixOverlayTimer > 0.0f)
+    if (cheatMessageTimer > 0.0f)
     {
-        drawMatrixOverlay();
+        drawCheatUnlockMessage();
     }
 
     EndDrawing();
@@ -592,36 +574,24 @@ void Game::drawCheatPanel() const
 
     DrawRectangle(18, 50, 864, 34, Color{5, 18, 12, 210});
     DrawRectangleLines(18, 50, 864, 34, Color{95, 255, 145, 160});
-    DrawText("CHEATS: 1 Speed+  2 Spawn Ball  3 Wide Paddle  4 +Life  5 Matrix Shield  6 Spoon Wave", 30, 59, 16, Color{140, 255, 170, 255});
+    DrawText("CHEATS: 1 Speed+  2 Spawn Ball  3 Wide Paddle  4 +Life  5 Safety Shield  6 Spoon Wave", 30, 59, 16, Color{140, 255, 170, 255});
 
     if (widePaddleTimer > 0.0f)
     {
         DrawText(TextFormat("Wide %.0fs", widePaddleTimer), 30, 90, 16, Color{180, 255, 190, 255});
     }
 
-    if (matrixShieldTimer > 0.0f)
+    if (shieldTimer > 0.0f)
     {
-        DrawText(TextFormat("Shield %.0fs", matrixShieldTimer), 125, 90, 16, Color{180, 255, 190, 255});
+        DrawText(TextFormat("Shield %.0fs", shieldTimer), 125, 90, 16, Color{180, 255, 190, 255});
     }
 }
 
-void Game::drawMatrixOverlay() const
+void Game::drawCheatUnlockMessage() const
 {
-    DrawRectangle(0, 0, screenWidth, screenHeight, Color{0, 0, 0, 230});
-
-    const int fontSize = 18;
-    const int lineHeight = 22;
-    const int lineCount = static_cast<int>(sizeof(matrixSpoonArt) / sizeof(matrixSpoonArt[0]));
-    const int startY = screenHeight / 2 - lineCount * lineHeight / 2;
-
-    for (int i = 0; i < lineCount; ++i)
-    {
-        const char *line = matrixSpoonArt[i];
-        const int x = screenWidth / 2 - MeasureText(line, fontSize) / 2;
-        DrawText(line, x, startY + i * lineHeight, fontSize, Color{95, 255, 145, 255});
-    }
-
-    drawCenteredText("CHEAT SYSTEM UNLOCKED", startY + lineCount * lineHeight + 18, 24, Color{180, 255, 190, 255});
+    DrawRectangle(screenWidth / 2 - 230, 116, 460, 58, Color{0, 0, 0, 210});
+    DrawRectangleLines(screenWidth / 2 - 230, 116, 460, 58, Color{95, 255, 145, 180});
+    drawCenteredText("CHEAT SYSTEM UNLOCKED", 132, 24, Color{180, 255, 190, 255});
 }
 
 void Game::drawCenteredText(const char *text, int y, int fontSize, Color color) const

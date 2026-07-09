@@ -38,9 +38,9 @@ private:
     int score;
     int lives;
     bool cheatsUnlocked;
-    float matrixOverlayTimer;
+    float cheatMessageTimer;
     float widePaddleTimer;
-    float matrixShieldTimer;
+    float shieldTimer;
 
     void resetGame();
     void resetBallAndPaddle();
@@ -58,7 +58,7 @@ private:
     void draw() const;
     void drawHud() const;
     void drawCheatPanel() const;
-    void drawMatrixOverlay() const;
+    void drawCheatUnlockMessage() const;
     void drawCenteredText(const char *text, int y, int fontSize, Color color) const;
     bool allBricksDestroyed() const;
 };

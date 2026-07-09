@@ -72,7 +72,7 @@ void clampPaddlePosition();
 - 砖块拥有不同耐久度，需要多次击中才能破坏。
 - 支持多球。
 - 支持隐藏作弊码 `thereisnospoon`。
-- 作弊系统解锁后显示 ASCII Art 过场。
+- 作弊系统解锁后显示短暂文字提示。
 - 作弊热键包括加速、生成额外小球、加宽挡板、增加生命、临时护盾和 Spoon Wave。
 - 控制台输出按键日志，便于调试和 Demo 说明。
 
@@ -112,9 +112,9 @@ void clampPaddlePosition();
 - `score`
 - `lives`
 - `cheatsUnlocked`
+- `cheatMessageTimer`
 - `widePaddleTimer`
-- `matrixShieldTimer`
-- `matrixOverlayTimer`
+- `shieldTimer`
 
 ### Paddle 类
 

@@ -59,7 +59,7 @@ build/arkanoid.exe
 thereisnospoon
 ```
 
-输入成功后会解锁作弊系统，并显示 Matrix 风格的 ASCII Art 过场。
+输入成功后会解锁作弊系统，并显示短暂的文字提示。
 
 作弊系统解锁后可以使用：
 
@@ -67,7 +67,7 @@ thereisnospoon
 - `2`：生成一个额外小球
 - `3`：临时加宽挡板
 - `4`：增加一条生命
-- `5`：开启临时 Matrix Shield，底部漏球会反弹
+- `5`：开启临时 Safety Shield，底部漏球会反弹
 - `6`：发动 Spoon Wave，直接破坏前方多个砖块
 
 ## 游戏规则
