@@ -3,6 +3,7 @@
 
 #include "Ball.h"
 #include "Brick.h"
+#include "Level.h"
 #include "Paddle.h"
 
 #include <string>
@@ -26,11 +27,10 @@ public:
 private:
     static constexpr int screenWidth = 900;
     static constexpr int screenHeight = 650;
-    static constexpr int brickRows = 5;
-    static constexpr int brickColumns = 10;
     static constexpr int startingLives = 3;
 
     GameState state;
+    Level level;
     Paddle paddle;
     std::vector<Ball> balls;
     std::vector<Brick> bricks;
@@ -46,6 +46,7 @@ private:
     void resetBallAndPaddle();
     void spawnBall(float x, float y, float directionX);
     void createBricks();
+    void advanceLevelOrWin();
     void update();
     void updatePlaying();
     void handleInput();

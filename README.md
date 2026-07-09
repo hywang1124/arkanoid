@@ -64,6 +64,7 @@ build/arkanoid.exe
 - 重新开始
 - 隐藏作弊码和 ASCII Art 过场
 - 多球、加速、护盾、加宽挡板等作弊功能
+- 3 个关卡，后续关卡会改变砖块排列并提高球速
 
 ## 项目结构
 
@@ -82,4 +83,6 @@ arkanoid/
     Ball.h
     Brick.cpp
     Brick.h
+    Level.cpp
+    Level.h
 ```

@@ -192,6 +192,7 @@ void Game::resetGame()
     score = 0;
     lives = startingLives;
     state = GameState::Start;
+    level.reset();
     cheatsUnlocked = false;
     cheatBuffer.clear();
     matrixOverlayTimer = 0.0f;
@@ -219,31 +220,29 @@ void Game::spawnBall(float x, float y, float directionX)
         return;
     }
 
-    balls.emplace_back(x, y, 9.0f, 360.0f);
-    balls.back().setVelocity(360.0f * directionX, -360.0f);
+    const float ballSpeed = level.getBallSpeed();
+    balls.emplace_back(x, y, 9.0f, ballSpeed);
+    balls.back().setVelocity(ballSpeed * directionX, -ballSpeed);
     balls.back().normalizeVelocity();
 }
 
 void Game::createBricks()
 {
-    bricks.clear();
+    bricks = level.createBricks(screenWidth);
+}
 
-    const float marginX = 45.0f;
-    const float startY = 80.0f;
-    const float gap = 8.0f;
-    const float brickWidth = (static_cast<float>(screenWidth) - marginX * 2.0f - gap * (brickColumns - 1)) / brickColumns;
-    const float brickHeight = 26.0f;
-
-    for (int row = 0; row < brickRows; ++row)
+void Game::advanceLevelOrWin()
+{
+    if (level.isFinalLevel())
     {
-        for (int column = 0; column < brickColumns; ++column)
-        {
-            const float x = marginX + column * (brickWidth + gap);
-            const float y = startY + row * (brickHeight + gap);
-            const int value = (brickRows - row) * 10;
-            bricks.emplace_back(x, y, brickWidth, brickHeight, value, row);
-        }
+        state = GameState::Win;
+        return;
     }
+
+    level.advance();
+    createBricks();
+    resetBallAndPaddle();
+    state = GameState::Start;
 }
 
 void Game::update()
@@ -319,7 +318,7 @@ void Game::updatePlaying()
 
     if (allBricksDestroyed())
     {
-        state = GameState::Win;
+        advanceLevelOrWin();
     }
 }
 
@@ -544,8 +543,9 @@ void Game::draw() const
 
     if (state == GameState::Start)
     {
-        drawCenteredText("ARKANOID", 260, 48, RAYWHITE);
-        drawCenteredText("Press SPACE to start", 320, 24, Color{180, 220, 255, 255});
+        drawCenteredText(TextFormat("LEVEL %d", level.getCurrentLevel()), 245, 34, Color{180, 220, 255, 255});
+        drawCenteredText("ARKANOID", 285, 48, RAYWHITE);
+        drawCenteredText("Press SPACE to start", 345, 24, Color{180, 220, 255, 255});
     }
     else if (state == GameState::Paused)
     {
@@ -574,6 +574,7 @@ void Game::draw() const
 void Game::drawHud() const
 {
     DrawText(TextFormat("Score: %d", score), 24, 22, 22, RAYWHITE);
+    DrawText(TextFormat("Level: %d/%d", level.getCurrentLevel(), level.getTotalLevels()), screenWidth / 2 - 50, 22, 22, RAYWHITE);
     DrawText(TextFormat("Lives: %d", lives), screenWidth - 125, 22, 22, RAYWHITE);
     DrawText("A/D or Arrows: Move   P: Pause   ESC: Quit   Code: thereisnospoon", 160, screenHeight - 28, 18, Color{160, 170, 190, 255});
 }
