@@ -26,6 +26,7 @@ private:
     int currentLevel;
 
     bool shouldPlaceBrick(int row, int column) const;
+    int getBrickDurability(int row, int column) const;
 };
 
 #endif

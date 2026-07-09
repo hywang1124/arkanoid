@@ -43,8 +43,9 @@ std::vector<Brick> Level::createBricks(int screenWidth) const
 
             const float x = marginX + column * (brickWidth + gap);
             const float y = startY + row * (brickHeight + gap);
-            const int value = (rows - row) * 10 + currentLevel * 5;
-            bricks.emplace_back(x, y, brickWidth, brickHeight, value, row + currentLevel);
+            const int durability = getBrickDurability(row, column);
+            const int value = ((rows - row) * 10 + currentLevel * 5) * durability;
+            bricks.emplace_back(x, y, brickWidth, brickHeight, value, row + currentLevel, durability);
         }
     }
 
@@ -86,4 +87,26 @@ bool Level::shouldPlaceBrick(int row, int column) const
 
     // 最終レベルでは中央を厚くして難度を上げる
     return column >= row % 4 && column < brickColumns - row % 4;
+}
+
+int Level::getBrickDurability(int row, int column) const
+{
+    if (currentLevel == 1)
+    {
+        // 最上段だけ少し硬くして耐久度を見せる
+        return row == 0 ? 2 : 1;
+    }
+
+    if (currentLevel == 2)
+    {
+        return row < 2 ? 2 : 1;
+    }
+
+    const bool centerColumn = column >= 3 && column <= 6;
+    if (centerColumn && row < 4)
+    {
+        return 3;
+    }
+
+    return row < 2 ? 2 : 1;
 }

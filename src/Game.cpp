@@ -477,8 +477,10 @@ void Game::handleCollisions(Ball &activeBall)
 
         if (CheckCollisionCircleRec(activeBall.getPosition(), radius, brick.getBounds()))
         {
-            brick.hit();
-            score += brick.getValue();
+            if (brick.hit())
+            {
+                score += brick.getValue();
+            }
 
             const Rectangle bounds = brick.getBounds();
             const float ballX = activeBall.getPosition().x;
@@ -511,9 +513,11 @@ void Game::applySpoonWave()
     {
         if (brick.isActive())
         {
-            brick.hit();
-            score += brick.getValue();
-            ++destroyedCount;
+            if (brick.hit())
+            {
+                score += brick.getValue();
+                ++destroyedCount;
+            }
         }
 
         if (destroyedCount >= 5)
